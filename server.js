@@ -1,45 +1,46 @@
 const net = require('net');
-const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const WebSocket = require('ws');
 
 const PORT = 3000;
+const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// Create HTTP server to serve the HTML file and static assets
+// Create HTTP server to serve the public folder
 const server = http.createServer((req, res) => {
-    let filePath = '.' + req.url;
+    let filePath = req.url === '/' ? '/index.html' : req.url;
+    filePath = path.join(PUBLIC_DIR, filePath);
 
-    if (filePath === './') {
-        filePath = './src/index.html'; // Default file to serve
-    }
-
-    const extname = path.extname(filePath);
-    let contentType = 'text/html';
-
-    switch (extname) {
-        case '.js':
-            contentType = 'text/javascript';
-            break;
-        case '.css':
-            contentType = 'text/css';
-            break;
-        // Add more cases as needed for other file types
-    }
-
-    fs.readFile(filePath, (err, content) => {
+    // Check if the requested file exists
+    fs.access(filePath, fs.constants.F_OK, (err) => {
         if (err) {
-            if (err.code === 'ENOENT') {
-                res.writeHead(404);
-                res.end('404 Not Found');
-            } else {
-                res.writeHead(500);
-                res.end(`Server Error: ${err.code}`);
-            }
-        } else {
-            res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content, 'utf-8');
+            // File not found
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('404 Not Found');
+            return;
         }
+
+        // Read and serve the file
+        fs.readFile(filePath, (err, content) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.end('500 Internal Server Error');
+                return;
+            }
+
+            // Determine content type based on file extension
+            let contentType = 'text/html';
+            if (filePath.endsWith('.css')) {
+                contentType = 'text/css';
+            } else if (filePath.endsWith('.js')) {
+                contentType = 'text/javascript';
+            }
+
+            // Serve the file with appropriate content type
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(content);
+        });
     });
 });
 
@@ -47,21 +48,25 @@ server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-
-// WebSocket server setup
+// Set up WebSocket server
 const wss = new WebSocket.Server({ server });
 
-// WebSocket handling
+// Handle WebSocket connections
 wss.on('connection', (ws) => {
     console.log('WebSocket client connected');
 
-    // Send initial data to client on connection
-    ws.send(JSON.stringify({ Temp1, Temp2 }));
+    // Handle messages from clients if needed
+    ws.on('message', (message) => {
+        console.log(`Received message from client: ${message}`);
+        // Handle messages from clients if needed
+    });
 
+    // Close WebSocket connection
     ws.on('close', () => {
         console.log('WebSocket client disconnected');
     });
 });
+
 
 // TCP socket setup
 const IPAddress = "192.168.0.85"; // Replace with your server's IP address
