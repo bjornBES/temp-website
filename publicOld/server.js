@@ -9,38 +9,38 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 
 // Create HTTP server to serve the public folder
 const server = http.createServer((req, res) => {
-    let filePath = req.url === '/' ? '/index.html' : req.url;
-    filePath = path.join(PUBLIC_DIR, filePath);
+    let filePath = '.' + req.url;
 
-    // Check if the requested file exists
-    fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (filePath === './') {
+        filePath = './src/index.html'; // Default file to serve
+    }
+
+    const extname = path.extname(filePath);
+    let contentType = 'text/html';
+
+    switch (extname) {
+        case '.js':
+            contentType = 'text/javascript';
+            break;
+        case '.css':
+            contentType = 'text/css';
+            break;
+        // Add more cases as needed for other file types
+    }
+
+    fs.readFile(filePath, (err, content) => {
         if (err) {
-            // File not found
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('404 Not Found');
-            return;
-        }
-
-        // Read and serve the file
-        fs.readFile(filePath, (err, content) => {
-            if (err) {
-                res.writeHead(500, { 'Content-Type': 'text/plain' });
-                res.end('500 Internal Server Error');
-                return;
+            if (err.code === 'ENOENT') {
+                res.writeHead(404);
+                res.end('404 Not Found');
+            } else {
+                res.writeHead(500);
+                res.end(`Server Error: ${err.code}`);
             }
-
-            // Determine content type based on file extension
-            let contentType = 'text/html';
-            if (filePath.endsWith('.css')) {
-                contentType = 'text/css';
-            } else if (filePath.endsWith('.js')) {
-                contentType = 'text/javascript';
-            }
-
-            // Serve the file with appropriate content type
+        } else {
             res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content);
-        });
+            res.end(content, 'utf-8');
+        }
     });
 });
 
