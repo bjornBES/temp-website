@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "npm run build:static && npm run build:assets",
-    "build:static": "mkdir public && copy src\\index.html public\\index.html && copy server.js public\\server.js",
+    "build:static": "mkdir public\\src && copy src\\index.html public\\src\\index.html && copy server.js public\\server.js",
     "build:assets": "echo 'Optional: Add script to handle other assets like images, fonts, etc.'",
     "start": "node ./public/server.js",
     "dev": "nodemon --watch src --ext js,html server.js"
